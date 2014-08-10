@@ -11,6 +11,8 @@ Achievements
 * Insert missing longitudes and latitudes
 * Extract 20CR climatologies for all stations
 * read in all new stations into R and converted to standard format
+* Common long and compact format defined
+* Reorganised original files into compact format (Matthias)
 
 Common data format
 -----------------------------
@@ -32,8 +34,6 @@ To Do
 ------------
 * Check missing longitudes and latitudes (street addresses in Yuri's paper)
 * Check unit conversion of Swedish Series (dec tum, or 1/12 inch?)
-* Define common format for intermediate worksheets
-* Reorganise original .xls files to common format
 * Convert units
 * Correct reading for temperature
 * Convert to mean sea level
