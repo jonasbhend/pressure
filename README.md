@@ -13,6 +13,7 @@ Achievements
 * read in all new stations into R and converted to standard format
 * Common long and compact format defined
 * Reorganised original files into compact format (Matthias)
+* Added function to compute local sunset and sunrise (in local solar time) and generally convert time from various formats to HH:MM
 
 Common data format
 -----------------------------
@@ -33,7 +34,9 @@ The common data format is a table with all available information from the origin
 To Do
 ------------
 * Check missing longitudes and latitudes (street addresses in Yuri's paper)
-* Check unit conversion of Swedish Series (dec tum, or 1/12 inch?)
+* Check temperature units of Ylitornio series
+* Check pressure units / values of Paris_b series
+* Check calendar dates (Gregorian or Julian?), difference is 12 days from 1st March 1800- 28th of Feb. 1900 where March 1 1800 after Julian is March 13 after Gregorian calendars (difference in accuracy of leap time). Gregorian is the standard and has been adopted over time since its introduction in 1582.
 * Convert units
 * Correct reading for temperature
 * Convert to mean sea level
