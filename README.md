@@ -51,15 +51,19 @@ The common data format is a table with all available information from the origin
 * **P.orig** barometer readings in hPa corrected for local gravity
 * **QFE** station pressure in hPa reduced to 0 deg. C
 * **QFE.flag** temperature correction of station pressure
+
   0 missing value
   1 corrected in original record (and sometimes rebased, e.g. from 55F to 0C)
   2 corrected using temperature at the barometer
   3 corrected using in-situ outside air temperature
   4 corrected using 20CR climatology
+
 * **QFF** sea level pressure in hPa
 * **QFF.flag** temperature used to reduce to sea level
+
   0 missing value
   1 QFF available from original record
   2 corrected using in-situ outside air temperature
   3 corrected using 20CR climatology
+
 * **TP and TA** for temperature at barometer and temperature of outside air
