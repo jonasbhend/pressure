@@ -74,10 +74,24 @@ Processing of pressure data
 ### Conversion of units ###
 Pressure in original units is converted to mm Hg using the appropriate conversion factors. The conversion factors are detailed below. Generally, only the largest length unit used is indicated, sub-units follow base 12 unless specified.
 * **English inches:** 1 in = 2.54 cm
-* **French inches:** 1 in = 
-* **Danish inches:** 1 in = 
-* **Swedish inches:** 1 tum =
-* **Rijnlands inches:** 1 in =
+* **French inches:** 1 in = 2.707 cm
+* **Swedish inches:** 1 tum = 2.969 cm
+* **Rijnlands inches:** 1 in = 2.62 cm
 
-### Correction for local gravity ###
-To reduce the pressure reading in mmHg
+### Correction of barometer readings to standard conditions ###
+We correct all converted barometer readings in mmHg to standard correction. This involves a correction for local gravity and a correction for temperature following [WMO 2010][WMO2010]. Barometer readings that are available in hPa are only corrected for temperature if metadata does not indicate that such a correction has already been performed. 
+
+#### Correction for local gravity ####
+To convert the pressure reading in mmHg to hPa we use the following formula:
+$$ P_{n} = \rho * g_{\Phi,h} * mmHg * 1e-5 $$
+where $P_{n}$ is the absolute pressure in hPa reduced to normal gravity, $\rho=1.35951e4$ is the density of mercury at 0\u00b0 C, $g_{\Phi,h}$ is the local gravity (see below), and $mmHg$ is the barometer reading in mm. This is equivalent to correcting pressure in hPa for local gravity by using
+$$ P_{n} = g_{\Phi,h} / g_{n} * P_{0} $$
+where $P_{0}$ is the absolute pressure not reduced to normal gravity and $g_{n}=9.80665 ms**{–2}$.
+
+Local gravity $g_{\Phi,h}$ is estimated based on the latitude and elevation assuming flat terrain around the station
+$$g_{\Phi,h} = 9.80620 ms**{-2} * (1 - 0.0026442 * \cos{\Phi} - 0.0000058 * \cos{\phi}**2) - 0.000003086 * h$$
+where $h$ is the elevation above mean sea level in m.
+
+
+[WMO2010]: http://library.wmo.int/pmb_ged/wmo_8_en-2012.pdf "Guide to Meteorological Instruments and Methods of Observation. WMO-No. 8, 2008 edition, updated in 2010."
+
