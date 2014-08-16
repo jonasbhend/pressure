@@ -26,7 +26,7 @@ print('not successful')
 ## Get the 1815-17 period to do statistics
 PP <- lapply(PP, function(x) x[x$Year %in% 1815:1817, ])
 
-pdf('simple_pressure_evaluation.pdf', width=8.3, height=11.7, paper='special')
+pdf('figures/simple_pressure_evaluation.pdf', width=8.3, height=11.7, paper='special')
 par(mfrow=c(3,1), mar=c(0.5, 5, 0.5, 0.5), oma=c(15, 0, 0.5, 0.5), cex.axis=1.4, cex.lab=1.4)
 ## plot the average number of observations a day per station
 plot(sapply(PP, nrow)/1096, type='h', lwd=10, lend=3, col=grey(0.5), ylab='Average number of obs. per day 1815-17', xaxt='n')
