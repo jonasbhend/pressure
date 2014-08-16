@@ -1,5 +1,5 @@
-Air pressure
-============
+Conversion of historical air pressure data
+==========================================
 
 This repository contains a collection of scripts to format air pressure observations for use in historical reanalysis. 
 
@@ -16,6 +16,7 @@ Achievements
 * Convert compact to long format
 * Expand long format (see details):
   * Convert units of pressure and temperature readings
+  * Correct reading for local gravity
   * Correct reading for temperature
   * Convert to mean sea level
 
@@ -24,6 +25,7 @@ To Do
 * Check missing longitudes and latitudes (street addresses in Yuri's paper)
 * Check pressure units / values of Paris_b series
 * Check calendar dates (Gregorian or Julian?), difference is 12 days from 1st March 1800- 28th of Feb. 1900 where March 1 1800 after Julian is March 13 after Gregorian calendars (difference in accuracy of leap time). Gregorian is the de facto standard since 1582 but countries adopted the Gregorian calendar as late as Greece in 1923.
+* Temperature flag: 0 known, 1 unkonwn (at barometer or outside)
 
 
 Common data format
@@ -51,19 +53,31 @@ The common data format is a table with all available information from the origin
 * **P.orig** barometer readings in hPa corrected for local gravity
 * **QFE** station pressure in hPa reduced to 0 deg. C
 * **QFE.flag** temperature correction of station pressure
-
   * 0 missing value
   * 1 corrected in original record (and sometimes rebased, e.g. from 55F to 0C)
   * 2 corrected using temperature at the barometer
   * 3 corrected using in-situ outside air temperature
   * 4 corrected using 20CR climatology
-
 * **QFF** sea level pressure in hPa
 * **QFF.flag** temperature used to reduce to sea level
-
   * 0 missing value
   * 1 QFF available from original record
   * 2 corrected using in-situ outside air temperature
   * 3 corrected using 20CR climatology
-
 * **TP and TA** for temperature at barometer and temperature of outside air
+
+
+
+Processing of pressure data
+---------------------------------------------
+
+### Conversion of units ###
+Pressure in original units is converted to mm Hg using the appropriate conversion factors. The conversion factors are detailed below. Generally, only the largest length unit used is indicated, sub-units follow base 12 unless specified.
+* **English inches:** 1 in = 2.54 cm
+* **French inches:** 1 in = 
+* **Danish inches:** 1 in = 
+* **Swedish inches:** 1 tum =
+* **Rijnlands inches:** 1 in =
+
+### Correction for local gravity ###
+To reduce the pressure reading in mmHg
