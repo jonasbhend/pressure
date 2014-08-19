@@ -3,7 +3,7 @@ Conversion of historical air pressure data
 
 This repository contains a collection of scripts to format and analyse air pressure observations for use in historical reanalysis. 
 
-To bring historical air pressure readings to a common format, multiple steps will be needed, some of which may be performed manually on the original data. The remainder of the tasks and the common (long) data format is documented in [docs] ([.Rmd](docs/pressure_documentation.Rmd)).
+To bring historical air pressure readings to a common format, multiple steps will be needed, some of which may be performed manually on the original data. The remainder of the tasks and the common (long) data format is documented in [docs](docs) ([.Rmd](docs/pressure_documentation.Rmd)).
 
 Achievements
 -----------------------
