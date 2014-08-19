@@ -3,18 +3,18 @@ title: "Conversion and analysis of historical air pressure data"
 author: "Jonas Bhend"
 date: "August 19, 2014"
 output:
-  html_document:
+  word_document:
+    fig_caption: yes
+    highlight: monochrome
+  pdf_document:
     fig_caption: yes
     highlight: monochrome
     number_sections: yes
     toc: yes
     toc_depth: 3
-  pdf_document:
+  html_document:
+    fig_caption: yes
     highlight: monochrome
-    number_sections: yes
-    toc: yes
-    toc_depth: 3
-  word_document:
     number_sections: yes
     toc: yes
     toc_depth: 3
@@ -22,9 +22,29 @@ output:
 
 # Installation and preparation
 
-All the code necessary to convert and analyse pressure readings is available on [github](http://www.github.com/jonasbhend/pressure).
+All the code necessary to convert and analyse pressure readings is available on [github](https://www.github.com/jonasbhend/pressure).
 
-The main repository
+The [main repository](https://www.github.com/jonasbhend/pressure) contains the following sub-directories.
+
+* `docs`: documentation on the pressure conversion and analysis (this manual)
+* `src`: the shell scripts to compute 30-year climatologies of 20^th^ century reanalysis temperatures and the R scripts to read in all available stations in the repository
+* `compact_data`: Original records (.xls files) converted to the standard compact format
+* `orig_data`: Original records not converted to the standard format or links to the original records where these can be used directly
+
+In addition, the repository contains a README file, the spreadsheet containing metadata on the pressure inventory (Working_inventory_pressure_1815-17.xls), and a template for organising pressure data in compact form for automatic processing (Template_for_pressure_data.xlsx). 
+
+To get a copy of the repository, please clone the repository from github
+
+    git clone git@github.com:jonasbhend/pressure.git
+
+or download it as a [zip file](https://github.com/jonasbhend/pressure/archive/master.zip).
+
+To run, inspect and change the various R functions used to convert atmospheric pressure, you also need to install the R package `pressurehelper` from github. To do so from within R, type:
+
+    install.packages('devtools')
+    library(devtools)
+    install_github('jonasbhend/pressurehelper')
+
 
 # Common data format
 
@@ -63,6 +83,7 @@ The common data format is a table with all available information from the origin
     + 3 corrected using 20CR climatology
 * `TP and TA` for temperature at barometer and temperature of outside air
 
+Data in the compact format are read in and converted to the long format using the function `compact2long` from the `pressurehelper` package. The conversion of pressure and temperature data, and the extension of the data frame in the long format to include all available columns specified above is carried out in the `expand_long` function. The individual steps performed to convert observations and expand the data frame are specified in the next section.
 
 # Processing of pressure data
 
@@ -73,7 +94,7 @@ Observation times are available in various formats in the original records. All 
 In case observation times are missing, but observations have been taken at regular intervals, missing observations times are replaced with the most frequent observation time for this interval (e.g.\ 9PM for evening observations if 9PM is the most frequent known time for evening observations). If the observation schedule is fully unknown, a local observation time of 2PM is assumed. In both cases, the time flag for these observations is set to missing (i.e.\ `Time.missing = 1`).
 
 ### Qualitative observation times
-Qualitative observation times are converted to quantitative times using the simple lookup table below.
+Qualitative observation times are converted to quantitative times based on the lookup table below.
 
 * morning = 8AM
 * noon = 12PM
@@ -81,7 +102,7 @@ Qualitative observation times are converted to quantitative times using the simp
 * evening = 8PM
 
 ### Local sunrise and sunset
-In cases for which observation times are noted as *sunrise* and *sunset*, the local sunrise and sunset is computed based on the date and latitude of the station based on the following formula
+In cases for which observation times are noted as *sunrise* and *sunset*, the local sunrise and sunset is computed based on the date and latitude of the station using. The following formula is used to estimate local sunrise and sunset
 
 $$ H_{sun} = \arccos \left({-\tan \phi \cdot \tan \delta}\right) \cdot \frac{24~h}{2 \pi}$$
 
@@ -99,7 +120,7 @@ Missing observation dates (days, months, and years) are only substituted in case
 Finally, we assume that the standard Gregorian calendar has been used in all of the records available.
 
 ## Conversion of length units
-Pressure in original units is converted to mm Hg using the appropriate conversion factors. The conversion factors are detailed below. Generally, only the largest length unit used is indicated, sub-units follow base 12 unless specified.
+Barometer readings in original units are converted to mm Hg. The conversion factors are detailed below. Generally, only the largest length unit used is indicated, sub-units follow base 12 unless specified.
 
 * English inches: 1 in = 2.54 cm
 * French inches: 1 in = 2.707 cm
@@ -107,7 +128,7 @@ Pressure in original units is converted to mm Hg using the appropriate conversio
 * Rijnlands inches: 1 in = 2.62 cm
 
 ## Correction of barometer readings to standard conditions
-We correct all converted barometer readings in mmHg to standard correction. This involves a correction for local gravity and a correction for temperature following [WMO 2010][WMO2010]. Barometer readings that are available in hPa are only corrected for temperature if metadata does not indicate that such a correction has already been performed. 
+We correct all converted barometer readings in mmHg to standard conditions. This involves a correction for local gravity and a correction for temperature following [WMO 2010][WMO2010]. Barometer readings that are available in hPa are only corrected for temperature if metadata does not indicate that such a correction has already been performed. 
 
 ### Correction for local gravity
 To convert the pressure reading in mmHg to hPa we use the following formula:
@@ -128,13 +149,52 @@ Where pressure observations have been reduced to some temperature other than 0º
 
 ## Reduction to mean sea level
 To further reduce station pressure `QFE` to pressure at sea level `QFF`, we follow the guidelines of [WMO 2010][WMO2010], but diverge where necessary. The station pressure $P_S$ (`QFE` in common data format) is reduced to sea level pressure $P_0$ using
-
 $$ P_0 = P_S \cdot \exp \left( {\frac{\frac{g(\phi,h)}{R} \cdot h}{T_S + a \cdot \frac{h}{2} }} \right)$$
-
 where the $g(\phi, h)$ is the local gravity, $R=287.05~J kg^{-1} K^{-1}$ is the gas constant of dry air, $h$ is the elevation in m, $a=0.0065~Km^{-1}$ is the standard lapse rate of the fictituous air column below the station, and $T_S$ is the temperature at the station in K. In contrast to [WMO 2010][WMO2010], we do not correct for humidity and instead of using the station elevation in geopotential meters and normal gravity, we use station elevation in m and local gravity. Also, we do not further adjust low-level stations based on the mean annual normal value of virtual temperature.
 
 As for the reduction of pressure readings to 0º C, we use *in-situ* air temperature observations (`TA.orig`) where available and resort to using climatological temperatures from the 20^th^ century reanalysis (1871-1900) instead. We do not use temperature at the barometer (`TP.orig`) to reduce pressure readings to sea level as this is measured indoors in most cases and may be affected by heating in the room or adjacent rooms.
 
-
 [WMO2010]: http://library.wmo.int/pmb_ged/wmo_8_en-2012.pdf "Guide to Meteorological Instruments and Methods of Observation. WMO-No. 8, 2008 edition, updated in 2010."
+
+# Analysis of pressure data at stations
+In the following, the R code used to produce the plots and analyses is displayed for didactic purposes. First, we load the data converted with `read_and_convert_pressure.R`.
+
+```{r}
+library(ggplot2)
+load('../data/all_station_and_travel_pressure_data_1815-17.Rdata')
+```
+
+Next, we inspect the data visually.
+\pagebreak
+
+```{r, warning=FALSE, fig.cap="Pressure at station (in hPa) per station in the data set", fig.height=6, fig.width=6}
+ggplot() + geom_boxplot(data=PPmerge, aes(Station, QFE)) + 
+  coord_flip() + scale_x_discrete(limits=rev(unique(PPmerge$Station)))
+```
+
+\pagebreak
+
+```{r, warning=FALSE, fig.cap="Pressure reduced to sea level (in hPa) per station in the data set", fig.height=6, fig.width=6}
+ggplot() + geom_boxplot(data=PPmerge, aes(Station, QFF)) + 
+  coord_flip() + scale_x_discrete(limits=rev(unique(PPmerge$Station)))
+```
+
+
+
+
+# Appendix 1: Overview Tables
+
+```{r, results='asis', echo=FALSE, fig.cap="Overview of historical pressure observations for the years around 1815"}
+## compute overview table
+overview.table <- t(sapply(PP, function(x){
+  x2 <- x[x$Year %in% 1815:1817,]
+  return(c(Period=paste(range(x$Year, na.rm=T), collapse='-'),
+    `Number of records`=sum(!is.na(x$QFF)),
+    `Number of records in 1815-17`=sum(!is.na(x2$QFF))))
+}))
+
+knitr::kable(overview.table)
+
+```
+
 
