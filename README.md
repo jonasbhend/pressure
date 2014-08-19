@@ -3,13 +3,13 @@ Conversion of historical air pressure data
 
 This repository contains a collection of scripts to format and analyse air pressure observations for use in historical reanalysis. 
 
-To bring historical air pressure readings to a common format, multiple steps will be needed, some of which may be performed manually on the original data. The remainder of the tasks and the common (long) data format is documented in pressure_documentation.md.
+To bring historical air pressure readings to a common format, multiple steps will be needed, some of which may be performed manually on the original data. The remainder of the tasks and the common (long) data format is documented in [docs] ([.Rmd](docs/pressure_documentation.Rmd)).
 
 Achievements
 -----------------------
 * Compute 30-year climatologies from 20CR (3hourly tmin and tmax)
 * Insert missing longitudes and latitudes
-* Extract 20CR climatologies for all stations
+* Extract 20CR climatologies for all stations and travel reports
 * read in all new stations into R and converted to standard format
 * Common long and compact format defined
 * Reorganised original files into compact format (Matthias)
