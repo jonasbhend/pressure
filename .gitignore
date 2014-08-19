@@ -3,5 +3,6 @@ long_data
 .DS_Store
 figures
 figures/*
+data
 new_ISPD
 

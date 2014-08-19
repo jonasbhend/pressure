@@ -1,10 +1,11 @@
 ## main script to process atmospheric pressure data from repository
+setwd('~/Unibe/pressure')
 
 ## load package with helper functions
 library(pressurehelper)
 
 ## filepath for output files
-storpath <- '~/Unibe/pressure/long_data'
+storpath <- 'long_data'
 
 ## get stations to be read in (from main Excel file)
 inventory <- read_inventory()
@@ -22,6 +23,9 @@ print(paste('Read in and converted', length(PP), 'out of', length(stations), 'st
 print('Atmospheric pressure conversion for:')
 for (stn in setdiff(stations, names(PP))) print(stn)
 print('not successful')
+
+## write out complete (as far as truncated .xls files go) data set to Rdata object
+save(PP, file='data/all_station_and_travel_pressure_data_1815-17.Rdata')
 
 ## Get the 1815-17 period to do statistics
 PP <- lapply(PP, function(x) x[x$Year %in% 1815:1817, ])
