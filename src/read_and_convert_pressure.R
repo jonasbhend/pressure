@@ -29,10 +29,14 @@ dnames <- Reduce(intersect, lapply(PP, names))
 PPmerge <- Reduce(rbind, lapply(PP, function(x) x[,dnames]))
 
 ## write out complete (as far as truncated .xls files go) data set to Rdata object
-save(PPmerge, PP, file='data/all_station_and_travel_pressure_data_1815-17.Rdata')
+save(PP, file='data/all_station_and_travel_pressure_data.Rdata')
 
 ## Get the 1815-17 period to do statistics
 PP <- lapply(PP, function(x) x[x$Year %in% 1815:1817, ])
+PPmerge <- PPmerge[PPmerge$Year %in% 1815:1817,]
+
+## write out subset for 1815-1817
+save(PP, file='data/all_station_and_travel_pressure_data_1815-17.Rdata')
 
 for (stn in names(PP)){
   ## convert date objects in data frame to character for output
@@ -48,4 +52,4 @@ for (stn in names(PP)){
 
 ## quit and say goodbye
 print('Good-bye')
-q(save='no')
+## q(save='no')
