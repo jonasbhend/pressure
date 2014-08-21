@@ -1,0 +1,1 @@
+../../Tambora/data/Stockholm/stockholm_daily_obs_hours_cet_1756_2012.txt

@@ -1,0 +1,1 @@
+../../Tambora/data/Stockholm/stockholm_barometer_1756_1858.txt
