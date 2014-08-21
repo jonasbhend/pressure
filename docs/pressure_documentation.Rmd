@@ -1,23 +1,23 @@
 ---
 title: "Conversion and analysis of historical air pressure data"
 author: "Jonas Bhend"
-date: "August 19, 2014"
+date: "August 21, 2014"
 output:
-  word_document:
-    fig_caption: yes
-    highlight: monochrome
-  pdf_document:
-    fig_caption: yes
-    highlight: monochrome
-    number_sections: yes
-    toc: yes
-    toc_depth: 3
   html_document:
     fig_caption: yes
     highlight: monochrome
     number_sections: yes
     toc: yes
     toc_depth: 3
+  pdf_document:
+    fig_caption: yes
+    highlight: monochrome
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+  word_document:
+    fig_caption: yes
+    highlight: monochrome
 ---
 
 # Installation and preparation
@@ -156,12 +156,23 @@ As for the reduction of pressure readings to 0º C, we use *in-situ* air tempera
 
 [WMO2010]: http://library.wmo.int/pmb_ged/wmo_8_en-2012.pdf "Guide to Meteorological Instruments and Methods of Observation. WMO-No. 8, 2008 edition, updated in 2010."
 
+\pagebreak
+
 # Analysis of pressure data at stations
-In the following, the R code used to produce the plots and analyses is displayed for didactic purposes. First, we load the data converted with `read_and_convert_pressure.R`.
+In the following, the R code used to produce the plots and analyses is displayed to illustrate how to work with the data. First, we load the data converted with `read_and_convert_pressure.R`.
 
 ```{r}
-library(ggplot2)
-load('../data/all_station_and_travel_pressure_data_1815-17.Rdata')
+library(ggplot2, quietly=TRUE)
+library(maps, quietly=TRUE)
+library(pressurehelper, quietly=TRUE) ## for computation of distance on globe
+## read in all the data (not just 1815-17)
+load('../data/all_station_and_travel_pressure_data.Rdata')
+
+## exclude travel data
+travelnames <- c('West_coast_of_Corea', 'Interior_of_China', 'England_to_Ceylon')
+PP <- PP[-which(names(PP) %in% travelnames)]
+PPmerge <- PPmerge[-which(PPmerge$Station %in% travelnames),]
+
 ```
 
 Next, we inspect the data visually.
@@ -176,13 +187,246 @@ ggplot() + geom_boxplot(data=PPmerge, aes(Station, QFE)) +
 
 ```{r, warning=FALSE, fig.cap="Pressure reduced to sea level (in hPa) per station in the data set", fig.height=6, fig.width=6}
 ggplot() + geom_boxplot(data=PPmerge, aes(Station, QFF)) + 
-  coord_flip() + scale_x_discrete(limits=rev(unique(PPmerge$Station)))
+  scale_x_discrete(limits=rev(unique(PPmerge$Station))) +
+  coord_flip()
+```
+
+\pagebreak
+
+```{r, warning=FALSE, fig.cap="Time series of pressure reduced to sea level (QFF in hPa) per station for 1815-1817", fig.width=8, fig.height=6}
+
+ggplot(PPmerge[PPmerge$Year %in% 1815:1817, ], aes(Local.date, QFF)) + 
+  geom_line() + 
+  facet_wrap(~ Station, ncol=7) + 
+  theme(axis.ticks.x=element_blank(), axis.text.x=element_blank()) + 
+  xlab('Year (1815-1817)')
+
+```
+
+\pagebreak
+
+```{r, warning=FALSE, fig.cap='Trend in pressure time series (all available values) in hPa per year with 5-95% confidence interval. This should be zero unless the record is short, or there is a drift in the measurement.', fig.width=4, fig.height=6}
+## compute trend
+PPtrend <- Reduce(rbind, lapply(PP, function(x) {
+  xlm <- summary(lm(QFF ~ Local.date, x))$coef * 3600*24 *365
+  data.frame(Station=x$Station[1], trend=xlm[2,1], 
+             lower=xlm[2,1] - 1.96*xlm[2,2], 
+             upper=xlm[2,1] + 1.96*xlm[2,2])
+  }))
+
+ggplot(PPtrend, aes(x=Station, y=trend)) +
+  geom_errorbar(mapping=aes(ymin=lower, ymax=upper)) + 
+  geom_point() + 
+  scale_x_discrete(limits=rev(unique(PPtrend$Station))) +
+  coord_flip()
+  
+```
+
+\pagebreak
+
+```{r, warning=FALSE, fig.cap='Annual cycle of sea level pressure (QFF, using the complete record for station with at least 1096 values in 1815-17). This is not very helpful and further smoothing might be needed.', fig.width=6, fig.height=5}
+
+monnames <- format(as.Date('1990-01-15') + seq(0,330,30), '%b')
+
+qplot(x=Month, y=QFF,
+      group=Station, colour=Station,
+      data=PPmerge[PPmerge$Total.values > 1095,],
+      stat='summary', fun.y='mean', geom='line') + 
+  guides(colour=FALSE) + 
+  scale_x_discrete(name='Month', labels=monnames)
+  
+```
+
+\pagebreak
+
+```{r, warning=FALSE, fig.cap="Daily cycle of station pressure (QFE, or QFF where QFE is not available)", fig.height=5, fig.width=6}
+
+dailyfun <- function(x){
+  xhour <- as.numeric(format(x$Local.date, '%H'))
+  ## subset to morning noon and evening
+  xcut <- c('morning', 'noon', 'evening')[cut(xhour, c(0,10,15,24))]
+  ## get name to use (QFE or QFF)
+  xname <- if (any(!is.na(x$QFE))) 'QFE' else 'QFF'
+  xdaily <- tapply(x[[xname]], xcut, mean, na.rm=T)
+  if (length(xdaily) > 0) {
+    ## resort xdaily to get morning first, evening last
+    xdaily <- xdaily[c('morning', 'noon', 'evening')]
+    xdaily <- xdaily[!is.na(xdaily)]
+    out <- data.frame(Time=names(xdaily),
+                      QFE=xdaily - mean(xdaily, na.rm=T), 
+                      Station=x$Station[1], 
+                      stringsAsFactors=FALSE) 
+  } else {
+    out <- data.frame(Time=NA, QFE=NA, Station=x$Station[1], stringsAsFactors=FALSE)
+  }
+  return(out)
+}
+
+daily <- lapply(PP, dailyfun)
+dailymerge <- as.data.frame(Reduce(rbind, daily))
+submerge <- dailymerge[dailymerge$Time == 'evening' & !is.na(dailymerge$QFE),]
+submerge <- submerge[order(submerge$QFE),]
+submerge$Station <- paste0('  ', gsub('_', ' ', submerge$Station)) ## for indent
+
+ggplot(data=dailymerge[!is.na(dailymerge$Time), ], aes(Time, QFE)) + 
+  geom_line(aes(colour=Station, group=Station)) + 
+  scale_x_discrete(limits=c('morning', 'noon', 'evening', ''), 
+                   labels=c('morning (before 10AM)', 'noon (10AM-3PM)', 'evening (after 3PM)', '')) + 
+  guides(colour=FALSE) + 
+  theme(panel.grid.minor.x=element_blank(), panel.grid.major.x=element_blank()) + 
+  geom_text(data=submerge[c(1:3, 6, 18, nrow(submerge) - 2:0),], 
+            aes(label=Station, hjust=0)) +
+  ylab('Station pressure anomalies from daily mean (hPa)')
+  
 ```
 
 
+```{r, warning=FALSE, fig.cap='Correlation of daily mean sea level pressure at different stations by distance along with a smoothed fit (piecewise linear regression)', fig.width=5, fig.height=4}
+
+## compute daily mean pressure and rename QFF to station name for later merging
+PPdaily <- lapply(PP, function(x){
+  xout <- aggregate(x$QFF, by=x[,c('Year', 'Month', 'Day')], mean, na.rm=T)
+  names(xout)[4] <- x$Station[1]
+  return(xout)
+})
+
+## Merge the data frames 
+## make sure we keep all the values 
+## (and not only rows that are present in all stations)
+mergefun <- function(x,y) merge(x,y, all=TRUE)
+dailymerge <- Reduce(mergefun, PPdaily)
+
+## compute the correlation
+ppcor <- cor(dailymerge[,-c(1:3)], use='p')
+
+## compute the distance between stations
+lola <- sapply(PP[gsub(' ', '', rownames(ppcor))],
+               function(x) unlist(x[1,c('Longitude', 'Latitude')]))
+ppdist <- compute_dist(lola[1,], lola[2,], lola[1,], lola[2,])
+
+df <- data.frame(Distance=ppdist[lower.tri(ppdist, diag=TRUE)],
+                 Correlation=ppcor[lower.tri(ppcor, diag=TRUE)])
+
+ggplot(data=df, aes(x=Distance, y=Correlation)) + 
+  geom_point() +
+  geom_smooth(se=FALSE, method='loess', span=0.5) + 
+  xlab('Distance (in km)')
+
+```
 
 
-# Appendix 1: Overview Tables
+\pagebreak
+
+# Analysis of temperature data at stations
+
+```{r, warning=FALSE, fig.cap="Observed in-situ air temperature vs. climatological temperature from 3-hourly temperature of the 20th century reanalysis (1871-1900) along with the 1-1 line in red and the best fit line in blue", fig.height=5, fig.width=6}
+
+ggplot(data=PPmerge[!is.na(PPmerge$TA.orig) & !is.na(PPmerge$TA.20CR),], 
+       aes(x=TA.20CR, y=TA.orig)) + 
+  geom_point() + 
+  geom_abline(c(0,1), colour='red') +
+  geom_smooth(method='lm', se=FALSE) + 
+  facet_wrap(~ Station, ncol=5) + 
+  xlab('Climatological temperature from 20th century reanalysis') + 
+  ylab('Outside air temperature')
+
+```
+
+\pagebreak
+
+```{r, warning=FALSE, fig.cap="Observed temperature at the barometer vs. climatological temperature from 3-hourly temperature of the 20th century reanalysis (1871-1900) along with the 1-1 line in red and the best fit line in blue (using piecewise linear regression)", fig.height=5, fig.width=6}
+
+ggplot(data=PPmerge[!is.na(PPmerge$TP.orig) & !is.na(PPmerge$TP.20CR),], 
+       aes(x=TP.20CR, y=TP.orig)) + 
+  geom_point() + 
+  geom_abline(c(0,1), colour='red') +
+  geom_smooth(method='loess', se=FALSE) + 
+  facet_wrap(~ Station, ncol=4) + 
+  xlab('Climatological temperature from 20th century reanalysis') + 
+  ylab('Temperature at the barometer')
+
+```
+
+\pagebreak
+
+```{r, warning=FALSE, fig.cap='Monthly mean temperature at the barometer for stations with in-situ measurements. The line colour denotes the station latitude.', fig.width=6, fig.height=5}
+
+monnames <- format(as.Date('1990-01-15') + seq(0,330,30), '%b')
+
+qplot(x=Month, y=TP.orig,
+      group=Station, colour=Latitude,
+      data=PPmerge[!is.na(PPmerge$TP.orig),],
+      stat='summary', fun.y='mean', geom='line') + 
+  guides(colour=FALSE) + 
+  scale_x_discrete(name='Month', labels=monnames) + 
+  ylab('Temperature at barometer in \u00b0C')
+  
+```
+
+\pagebreak
+
+```{r, warning=FALSE, fig.cap='Monthly mean outside air temperature for stations with in-situ measurements. The line colour denotes the station latitude.', fig.width=6, fig.height=5}
+
+monnames <- format(as.Date('1990-01-15') + seq(0,330,30), '%b')
+
+qplot(x=Month, y=TA.orig,
+      group=Station, colour=Latitude,
+      data=PPmerge[!is.na(PPmerge$TA.orig),],
+      stat='summary', fun.y='mean', geom='line') + 
+  guides(colour=FALSE) + 
+  scale_x_discrete(name='Month', labels=monnames) + 
+  ylab('Outside air temperature in \u00b0C')
+  
+```
+
+\pagebreak
+
+# Analysis of travel documents
+
+```{r, warning=FALSE, fig.cap='Time series of pressure records from travel documents', fig.width=8, fig.height=5}
+load('../data/all_station_and_travel_pressure_data.Rdata')
+PPtravel <- PPmerge[PPmerge$Station %in% travelnames, ]
+
+ggplot(data=PPtravel, 
+       aes(x=Local.date, y=QFE, group=Station, colour=Station)) + 
+  geom_line() + geom_point() + 
+  xlab('') + ylab('Absolute pressure at measurement location (hPa)')
+
+```
+
+\pagebreak
+
+```{r, warning=FALSE, fig.cap='Trajectory of travel documents where quantitative information on observing location is known. Filled symbols denote locations for which pressure data are available, colours indicate time from February 1816 (red) to July 1817 (blue).', fig.width=7, fig.height=4}
+
+## compute bounding box
+b <- t(sapply(PPtravel[,c('Longitude', 'Latitude')], range, na.rm=T))
+b[1, ] <- (b[1, ] - mean(b[1, ])) * 1.05 + mean(b[1, ])
+b[2, ] <- (b[2, ] - mean(b[2, ])) * 1.05 + mean(b[2, ])
+
+## compute colour according to time
+tlevs <- pretty(PPtravel$Local.date, 20)
+tcols <- hcl(seq(0,300,length=length(tlevs) - 1), l=50, c=70)
+PPtravel$colour <- cut(PPtravel$Local.date, tlevs)
+## get station identifier (numeric) from 1-3
+PPtravel$Stat <- as.numeric(factor(PPtravel$Station))
+PPtravel$pch <- c(15,14,16)[PPtravel$Stat]
+## get locations where we do not have pressure data
+noQFF <- is.na(PPtravel$QFF)
+PPtravel$pch[noQFF] <- c(1,0,2)[PPtravel$Stat[noQFF]]
+
+map(xlim=b[1,], ylim=b[2,], interior=F)
+box()
+points(Latitude ~ Longitude, data=PPtravel, cex=0.8, lwd=2,
+       pch=PPtravel$pch, col=tcols[PPtravel$colour])
+legend('bottomright', gsub('_', ' ', unique(PPtravel$Station)),
+       pch=14 + as.numeric(factor(unique(PPtravel$Station))),
+       bg='white', inset=0.02, cex=0.8)
+
+```
+
+\pagebreak
+
+# Appendix 1: Overview Table
 
 ```{r, results='asis', echo=FALSE, fig.cap="Overview of historical pressure observations for the years around 1815"}
 ## compute overview table
